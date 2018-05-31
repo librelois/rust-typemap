@@ -30,27 +30,45 @@ pub trait CloneAny: Any {
     #[doc(hidden)]
     fn clone_any(&self) -> Box<CloneAny>;
     #[doc(hidden)]
-    fn clone_any_send(&self) -> Box<CloneAny + Send> where Self: Send;
+    unsafe fn clone_any_send(&self) -> Box<CloneAny + Send>;
     #[doc(hidden)]
-    fn clone_any_sync(&self) -> Box<CloneAny + Sync> where Self: Sync;
+    unsafe fn clone_any_sync(&self) -> Box<CloneAny + Sync>;
     #[doc(hidden)]
-    fn clone_any_send_sync(&self) -> Box<CloneAny + Send + Sync> where Self: Send + Sync;
+    unsafe fn clone_any_send_sync(&self) -> Box<CloneAny + Send + Sync>;
+}
+
+struct CloneAnySendSync<T>(T);
+unsafe impl<T> Sync for CloneAnySendSync<T> { }
+unsafe impl<T> Send for CloneAnySendSync<T> { }
+
+impl<T: 'static + Clone> CloneAny for CloneAnySendSync<T> {
+    fn clone_any(&self) -> Box<CloneAny> {
+        Box::new(self.0.clone())
+    }
+    unsafe fn clone_any_send(&self) -> Box<CloneAny + Send> {
+        Box::new(CloneAnySendSync(self.0.clone()))
+    }
+    unsafe fn clone_any_sync(&self) -> Box<CloneAny + Sync> {
+        Box::new(CloneAnySendSync(self.0.clone()))
+    }
+    unsafe fn clone_any_send_sync(&self) -> Box<CloneAny + Send + Sync> {
+        Box::new(CloneAnySendSync(self.0.clone()))
+    }
 }
 
 impl<T: Any + Clone> CloneAny for T {
     fn clone_any(&self) -> Box<CloneAny> { Box::new(self.clone()) }
 
-    fn clone_any_send(&self) -> Box<CloneAny + Send> where Self: Send {
-        Box::new(self.clone())
+    unsafe fn clone_any_send(&self) -> Box<CloneAny + Send> {
+        Box::new(CloneAnySendSync(self.clone()))
     }
 
-    fn clone_any_sync(&self) -> Box<CloneAny + Sync> where Self: Sync {
-        Box::new(self.clone())
+    unsafe fn clone_any_sync(&self) -> Box<CloneAny + Sync> {
+        Box::new(CloneAnySendSync(self.clone()))
     }
 
-    fn clone_any_send_sync(&self) -> Box<CloneAny + Send + Sync>
-    where Self: Send + Sync {
-        Box::new(self.clone())
+    unsafe fn clone_any_send_sync(&self) -> Box<CloneAny + Send + Sync> {
+        Box::new(CloneAnySendSync(self.clone()))
     }
 }
 
@@ -59,15 +77,21 @@ impl Clone for Box<CloneAny> {
 }
 
 impl Clone for Box<CloneAny + Send> {
-    fn clone(&self) -> Box<CloneAny + Send> { (**self).clone_any_send() }
+    fn clone(&self) -> Box<CloneAny + Send> {
+        unsafe { (**self).clone_any_send() }
+    }
 }
 
 impl Clone for Box<CloneAny + Sync> {
-    fn clone(&self) -> Box<CloneAny + Sync> { (**self).clone_any_sync() }
+    fn clone(&self) -> Box<CloneAny + Sync> {
+        unsafe { (**self).clone_any_sync() }
+    }
 }
 
 impl Clone for Box<CloneAny + Send + Sync> {
-    fn clone(&self) -> Box<CloneAny + Send + Sync> { (**self).clone_any_send_sync() }
+    fn clone(&self) -> Box<CloneAny + Send + Sync> {
+        unsafe { (**self).clone_any_send_sync() }
+    }
 }
 
 unsafe impl UnsafeAnyExt for CloneAny {}
