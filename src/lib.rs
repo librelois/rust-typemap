@@ -48,6 +48,12 @@ pub type ShareMap = TypeMap<dyn UnsafeAny + Send + Sync>;
 /// A version of `TypeMap` containing only `Clone` types.
 pub type CloneMap = TypeMap<dyn CloneAny>;
 
+/// A version of `TypeMap` containing only `Clone + Send` types.
+pub type SendCloneMap = TypeMap<dyn CloneAny + Send>;
+
+/// A version of `TypeMap` containing only `Clone + Sync` types.
+pub type SyncCloneMap = TypeMap<dyn CloneAny + Sync>;
+
 /// A version of `TypeMap` containing only `Clone + Send + Sync` types.
 pub type ShareCloneMap = TypeMap<dyn CloneAny + Send + Sync>;
 
