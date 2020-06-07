@@ -149,11 +149,13 @@ impl<A: UnsafeAnyExt + ?Sized> TypeMap<A> {
     }
 
     /// Read the underlying HashMap
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn data(&self) -> &HashMap<TypeId, Box<A>> {
         &self.data
     }
 
     /// Get a mutable reference to the underlying HashMap
+    #[allow(clippy::missing_safety_doc)]
     pub unsafe fn data_mut(&mut self) -> &mut HashMap<TypeId, Box<A>> {
         &mut self.data
     }
